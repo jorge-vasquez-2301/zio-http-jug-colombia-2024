@@ -593,11 +593,103 @@ ZEnvironment[R] => Either[E, A]
 
 ---
 transition: slide-left
+layout: default
+---
+
+<div class="flex w-full h-full justify-center items-center">
+  <div><img src="/descubrir.jpeg" class="h-70 rounded-md"/></div>
+</div>
+
+---
+transition: slide-left
+layout: default
+---
+
+## El **Ecosistema** de ZIO
+
+<div class="flex h-4/5 w-full items-center gap-5">
+  <div>
+    <ul>
+      <li v-click><b>REST APIs</b> -> ZIO HTTP</li>
+      <li v-click><b>GraphQL</b> -> Caliban</li>
+      <li v-click><b>Bases de datos</b> -> ZIO JDBC, ZIO SQL, ZIO Quill</li>
+      <li v-click><b>JSON</b> -> ZIO Json</li>
+      <li v-click><b>Configuración</b> -> ZIO Config</li>
+      <li v-click><b>Logging</b> -> ZIO Logging</li>
+      <li v-click><b>Métricas</b> -> ZIO Metrics Connectors</li>
+      <li v-click><b>Tests</b> -> ZIO Test, ZIO Mock, ZIO Testcontainers</li>
+    </ul>
+  </div>
+</div>
+
+---
+transition: slide-left
+layout: default
+---
+
+## El **Ecosistema** de ZIO
+
+<div class="flex h-4/5 w-full items-center gap-5">
+  <div>
+    <ul>
+      <li v-click><b>Metaprogramming sin Macros</b> -> ZIO Schema</li>
+      <li v-click><b>Parsing</b> -> ZIO Parser</li>
+      <li v-click><b>Apps de línea de comandos</b> -> ZIO CLI</li>
+      <li v-click><b>AWS</b> -> ZIO AWS, ZIO DynamoDB, ZIO S3, ZIO SQS</li>
+      <li v-click><b>Kafka</b> -> ZIO Kafka</li>
+      <li v-click><b>Redis</b> -> ZIO Redis</li>
+      <li v-click><b>Kubernetes</b> -> ZIO K8s</li>
+    </ul>
+  </div>
+</div>
+
+---
+transition: slide-left
+layout: default
+---
+
+<div class="flex w-full h-full justify-center items-center">
+  <div><img src="/finalmente.jpg" class="h-70 rounded-md"/></div>
+</div>
+
+---
+transition: slide-left
+layout: image-right
+image: /checklist.jpg
+---
+
+### Con ustedes... **¡ZIO HTTP!**
+
+<div class="flex h-4/5 w-full items-center gap-5">
+  <ul>
+    <li v-click><b>ZIO HTTP</b> es una librería para construir aplicaciones HTTP</li>
+    <li v-click>Basada en <b>ZIO</b> y <b>Netty</b></li>
+    <li v-click><b>Alto performance</b></li>
+  </ul>
+</div>
+
+---
+transition: slide-left
+layout: image-right
+image: /checklist.jpg
+---
+
+### **ZIO HTTP** ofrece 2 APIs
+
+<div class="flex h-4/5 w-full items-center gap-5">
+  <ul>
+    <li v-click><b>Routes API:</b> Bajo nivel</li>
+    <li v-click><b>Endpoints API:</b> Alto nivel</li>
+  </ul>
+</div>
+
+---
+transition: slide-left
 layout: image-right
 image: /shoppingCart.jpg
 ---
 
-## Example: <br/> **Shopping cart API**
+## Ejemplo: <br/> **Shopping cart API**
 
 <div class="mt-8 grid grid-cols-[33%_1fr] h-3/5 w-full text-sm">
   <b v-click>Initialize cart:</b> <span v-after><code>POST /cart/{userId}</code></span>
@@ -612,7 +704,7 @@ transition: slide-left
 layout: default
 ---
 
-## Shopping Cart using the **ZIO-HTTP Routes API**
+## Shopping Cart usando la **Routes API**
 
 <div class="flex h-4/5 w-full items-center">
 ```scala {all} {maxHeight:'400px'}
