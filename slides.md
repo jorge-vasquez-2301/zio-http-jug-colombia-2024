@@ -726,18 +726,15 @@ transition: slide-left
 layout: default
 ---
 
-## Shopping Cart using the **ZIO-HTTP Routes API**
+## Shopping Cart usando la **Routes API**
 
-```scala {1|3|4|6-9|11-18|20-37|39-43} {maxHeight:'400px'}
+```scala {1|3|4|6|8-15|17-34|36-40} {maxHeight:'400px'}
 import zio.json._
 
-// Step 1: Define Models
+// Paso 1: Definir modelos
 type UserId = UUID
 
 type ItemId = UUID
-implicit val encoder: JsonFieldEncoder[UUID] = JsonFieldEncoder.string.contramap(_.toString())
-implicit val decoder: JsonFieldDecoder[UUID] =
-  JsonFieldDecoder.string.mapOrFail(str => Try(UUID.fromString(str)).toEither.left.map(_.getMessage()))
 
 final case class Item(id: ItemId, name: String, price: Double, quantity: Int) {
   self =>
@@ -779,14 +776,14 @@ transition: slide-left
 layout: default
 ---
 
-## Shopping Cart using the **ZIO-HTTP Routes API**
+## Shopping Cart usando la **Routes API**
 
 ```scala {1-3|5|6-13|8|9-12} {maxHeight:'400px'}
 import zio._
 import zio.http._
 import zio.json._
 
-// Step 2: Define Routes: Path Segments, Path Variables, Validation and Handlers
+// Paso 2: Definir rutas: segmentos, variables, validaciones y handlers
 val routes =
     Routes(
       Method.POST / "cart" / uuid("userId")                             -> handler(handleInitializeCart _),
@@ -802,103 +799,34 @@ transition: slide-left
 layout: default
 ---
 
-<div class="flex w-full h-full justify-center items-center">
-  <div><img src="/tooEasy.jpg" class="h-90 rounded-md"/></div>
-</div>
-
----
-transition: slide-left
-layout: default
----
-
-## Shopping Cart using the **ZIO-HTTP Routes API**
-
-```scala {1-2|4|5-16|18-34|36-41} {maxHeight:'400px'}
-import zio._
-import zio.macros._
-
-// Step 3: Define a CartService
-@accessible
-trait CartService {
-  def initialize(userId: UserId): UIO[Unit]
-
-  def addItem(userId: UserId, item: Item): UIO[Items]
-
-  def removeItem(userId: UserId, itemId: ItemId): UIO[Items]
-
-  def updateItemQuantity(userId: UserId, itemId: ItemId, quantity: Int): UIO[Items]
-
-  def getContents(userId: UserId): UIO[Items]
-}
-
-final case class CartServiceLive(carts: Ref[Map[UserId, Items]]) extends CartService {
-  self =>
-
-  def initialize(userId: UserId): UIO[Unit] = self.carts.update(_ + (userId -> Items.empty))
-
-  def addItem(userId: UserId, item: Item): UIO[Items] = self.updateCartsWith(userId)(_ + item)
-
-  def removeItem(userId: UserId, itemId: ItemId): UIO[Items] = self.updateCartsWith(userId)(_ - itemId)
-
-  def updateItemQuantity(userId: UserId, itemId: ItemId, quantity: Int): UIO[Items] =
-    self.updateCartsWith(userId)(_.updateQuantity(itemId, quantity))
-
-  def getContents(userId: UserId): UIO[Items] = self.carts.get.map(_.getOrElse(userId, Items.empty))
-
-  private def updateCartsWith(userId: UserId)(f: Items => Items): UIO[Items] =
-    self.carts.updateAndGet(_.updatedWith(userId)(_.map(f))).map(_.getOrElse(userId, Items.empty))
-}
-
-object CartServiceLive {
-  val layer: ULayer[CartService] =
-    ZLayer {
-      Ref.make(Map.empty[UserId, Items]).map(CartServiceLive(_))
-    }
-}
-```
-
----
-transition: slide-left
-layout: default
----
-
-<div class="flex w-full h-full justify-center items-center">
-  <div><img src="/classicZio.jpg" class="h-70 rounded-md"/></div>
-</div>
-
----
-transition: slide-left
-layout: default
----
-
-## Shopping Cart using the **ZIO-HTTP Routes API**
+## Shopping Cart usando la **Routes API**
 
 ```scala {1-3|5|7-14|8|13|16-36|17|21-23|25-34|35|38-45|39|44|47-60|48|52-54|56-59|62-78|63|67-76|77} {maxHeight:'400px'}
 import zio._
 import zio.http._
 import zio.json._
 
-// Step 4: Define Handlers
+// Paso 3: Definir los handlers
 
 // POST /cart/{userId}
-def handleInitializeCart(userId: UserId, req: Request): URIO[CartService, Response] =
+def handleInitializeCart(userId: UserId, req: Request): ZIO[CartService, Nothing, Response] =
   ZIO.logSpan("initializeCart") {
     for {
       _ <- ZIO.logInfo("Initializing cart")
       _ <- CartService.initialize(userId)
-    } yield Response.status(Status.NoContent) // We have to manually create an HTTP Response
+    } yield Response.status(Status.NoContent) // Tenemos que crear un HTTP Response manualmente
   } @@ ZIOAspect.annotated("userId", userId.toString())
 
 // POST /cart/{userId}/item
-def handleAddItem(userId: UserId, req: Request): URIO[CartService, Response] =
+def handleAddItem(userId: UserId, req: Request): ZIO[CartService, Nothing, Response] =
   ZIO.logSpan("addItem") {
     for {
       _ <- ZIO.logInfo("Adding item to cart")
-      // We have to manually decode the body as JSON, handling errors
+      // Tenemos que decodificar el body como JSON, manejando errores
       body   <- req.body.asString.orDie
       item   <- ZIO.fromEither(body.fromJson[Item]).orDieWith(new RuntimeException(_))
       items0 <- CartService.addItem(userId, item)
-      // We have to manually obtain and validate headers from the `Request` object
+      // Tenemos que obtener y validar headers manualmente a partir del objeto `Request`
       allItems = req.headers.get("X-ALL-ITEMS")
       items <- allItems match {
                 case Some(allItems) =>
@@ -908,39 +836,39 @@ def handleAddItem(userId: UserId, req: Request): URIO[CartService, Response] =
                   }
                 case None => ZIO.succeed(Items.empty + item)
               }
-    } yield Response.json(items.toJson) // We have to manually encode the Response as JSON
+    } yield Response.json(items.toJson) // Tenemos que codificar manualmente el Response como JSON
   } @@ ZIOAspect.annotated("userId", userId.toString())
 
 // DELETE /cart/{userId}/item/{itemId}
-def handleRemoveItem(userId: UserId, itemId: ItemId, req: Request): URIO[CartService, Response] =
+def handleRemoveItem(userId: UserId, itemId: ItemId, req: Request): ZIO[CartService, Nothing, Response] =
   ZIO.logSpan("removeItem") {
     for {
       _     <- ZIO.logInfo("Removing item from cart")
       items <- CartService.removeItem(userId, itemId)
-    } yield Response.json(items.toJson) // We have to manually encode the Response as JSON
+    } yield Response.json(items.toJson) // Tenemos que codificar manualmente el Response como JSON
   } @@ ZIOAspect.annotated("userId" -> userId.toString(), "itemId" -> itemId.toString())
 
 // PUT /cart/{userId}/item/{itemId}
-def handleUpdateItem(userId: UserId, itemId: ItemId, req: Request): URIO[CartService, Response] =
+def handleUpdateItem(userId: UserId, itemId: ItemId, req: Request): ZIO[CartService, Nothing, Response] =
   ZIO.logSpan("updateItem") {
     for {
       _ <- ZIO.logInfo("Updating item")
-      // We have to manually decode the body as JSON, handling errors
+      // Tenemos que decodificar el body como JSON, manejando errores
       body              <- req.body.asString.orDie
       updateItemRequest <- ZIO.fromEither(body.fromJson[UpdateItemRequest]).orDieWith(new RuntimeException(_))
       items             <- CartService.updateItemQuantity(userId, itemId, updateItemRequest.quantity)
     } yield Response(
       Status.Ok,
       Headers(Header.ContentType(MediaType.application.json))
-    ) // We have to manually set the Response content type
+    ) // Tenemos que crear un HTTP Response manualmente
   } @@ ZIOAspect.annotated("userId" -> userId.toString(), "itemId" -> itemId.toString())
 
 // GET /cart/{userId}
-def handleGetCartContents(userId: UserId, req: Request): URIO[CartService, Response] =
+def handleGetCartContents(userId: UserId, req: Request): ZIO[CartService, Nothing, Response] =
   ZIO.logSpan("getCartContents") {
     for {
       _ <- ZIO.logInfo("Getting cart contents")
-      // We have to manually obtain and validate query parameters from the `Request` object
+      // Tenemos que obtener y validar query params manualmente a partir del objeto `Request`
       limit = req.url.queryParams.get("limit").flatMap(_.headOption)
       items <- limit match {
                 case Some(limit) =>
@@ -950,7 +878,7 @@ def handleGetCartContents(userId: UserId, req: Request): URIO[CartService, Respo
                     .flatMap(limit => CartService.getContents(userId).map(_.take(limit)))
                 case None => CartService.getContents(userId)
               }
-    } yield Response.json(items.toJson) // We have to manually encode the Response as JSON
+    } yield Response.json(items.toJson) // Tenemos que codificar manualmente el Response como JSON
   } @@ ZIOAspect.annotated("userId" -> userId.toString())
 ```
 
@@ -959,125 +887,56 @@ transition: slide-left
 layout: default
 ---
 
-<div class="flex w-full h-full justify-center items-center">
-  <div><img src="/boring.jpg" class="h-70 rounded-md"/></div>
-</div>
+## Shopping Cart usando la **Routes API**
 
----
-transition: slide-left
-layout: default
----
+<div class="flex h-3/5 w-full items-center">
+```scala {1-3|5|6|7|9-10} {maxHeight:'400px'}
+import zio._
+import zio.http._
+import zio.json._
 
-<div class="flex w-full h-full justify-center items-center">
-  <div><img src="/nothingFree.jpg" class="h-70 rounded-md"/></div>
-</div>
+// Paso 4: Ejecutar el servidor
+object ShoppingCart extends ZIOAppDefault {
+  val routes = ...
 
----
-transition: slide-left
-layout: quote
----
+  override val run =
+    Server.serve(routes.sandbox.toHttpApp).provide(Server.default, CartServiceLive.layer)
+}
 
-# Can we do **better?**
-
----
-transition: slide-left
-layout: default
----
-
-<div class="flex w-full h-full justify-center items-center">
-  <div><img src="/picardOfCourse.jpg" class="h-70 rounded-md"/></div>
-</div>
-
----
-transition: slide-left
-layout: image
-image: /theater.jpg
-class: "text-center justify-center"
----
-
-# Use High-Level<br/>Endpoint Libraries!
-
----
-transition: slide-left
-layout: default
----
-
-## Use High-Level **Endpoint** Libraries!
-
-<div class="mt-4 flex h-4/5 w-full items-center gap-5 text-justify">
-  <div class="w-2/3">
-    <ul>
-      <li v-click>The Scala open-source ecosystem offers <b>superior alternatives</b> for API development</li>
-      <li v-click>Libraries like <b>Endpoints4s</b>, <b>Tapir</b> and <b>ZIO HTTP</b> enable developers to define Endpoints at a higher level</li>
-      <li v-click>They <b>eliminate</b> the need to handle decoding and encoding manually</li>
-      <li v-click>They provide benefits like <b>OpenAPI documentation</b> and <b>type-safe clients</b> totally for free</li>
-    </ul>
-  </div>
-  <div v-click><img src="/highLevel.jpeg" class="h-60 rounded-md"/></div>
-</div>
-
----
-transition: slide-left
-layout: default
----
-
-## Use High-Level **Endpoint** Libraries!
-
-<div class="flex w-full h-full justify-center items-center">
-  <div><img src="/sourceTruth.jpeg" class="h-60 rounded-md"/></div>
-</div>
-
----
-transition: slide-left
-layout: image
-image: /laptop.jpg
-class: "justify-end text-right"
----
-
-## Example:<br/>Shopping Cart<br/> using **ZIO-HTTP Endpoints API**
-
----
-transition: slide-left
-layout: default
----
-
-## Shopping Cart using the **ZIO-HTTP Endpoints API**
-
-<div class="flex h-4/5 w-full items-center">
-```scala {all} {maxHeight:'400px'}
-// build.sbt
-libraryDependencies ++= Seq(
-  "dev.zio" %% "zio-http" % zioHttpVersion // 3.0.0-RC4
-)
 ```
 </div>
 
-<style>
-  .slidev-code-wrapper {
-    @apply w-full
-  }
-</style>
+---
+transition: slide-left
+layout: image-right
+image: /checklist.jpg
+---
+
+### Características de la **Routes API**
+
+<div class="flex h-4/5 w-full items-center gap-5">
+  <ul>
+    <li v-click>Se define la API como un mapeo <b>Método/Path -> Handler</b></li>
+    <li v-click>Es de <b>bajo nivel</b></li>
+    <li v-click>Permite control total del <b>Request</b> y el <b>Response</b></li>
+    <li v-click>Impone tareas repetitivas de <b>codificación/decodificación</b></li>
+  </ul>
+</div>
 
 ---
 transition: slide-left
 layout: default
 ---
 
-## Shopping Cart using **ZIO-HTTP Endpoints API**
+## Shopping Cart usando la **Endpoints API**
 
-```scala {1-6|8|9-12|14|16-29|17|28|31-48|50-55} {maxHeight:'400px'}
+```scala {1-3|5|6|8|10-23|11|25-42|44-49} {maxHeight:'400px'}
 import zio.json._
 import zio.schema._
 import zio.schema.annotation.description
 
-import scala.util.Try
-import java.util.UUID
-
-// Step 1: Define Models
+// Paso 1: Definir modelos
 type ItemId = UUID
-implicit val encoder: JsonFieldEncoder[UUID] = JsonFieldEncoder.string.contramap(_.toString())
-implicit val decoder: JsonFieldDecoder[UUID] =
-  JsonFieldDecoder.string.mapOrFail(str => Try(UUID.fromString(str)).toEither.left.map(_.getMessage()))
 
 type UserId = UUID
 
@@ -1130,44 +989,42 @@ layout: default
 
 ## Shopping Cart using **ZIO-HTTP Endpoints API**
 
-```scala {1-4|6|7|8|9|10|11-12|14-16|15|16|18-22|19|20|21|22|24-26|28-31|33-36|35} {maxHeight:'400px'}
+```scala {1-4|6|7|8|9|10-11|13-15|14|15|17-21|18|19|20|21|23-25|27-30|32-35|34} {maxHeight:'400px'}
 import zio.http._
 import zio.http.codec._
 import zio.http.codec.HttpCodec._
 import zio.http.endpoint.Endpoint
 
-// Step 2: Define Endpoints
-trait Endpoints {
-  val userId    = uuid("userId") ?? Doc.p("The unique identifier of a user")
-  val itemId    = uuid("itemId") ?? Doc.p("The unique identifier of an item")
-  val limit     = paramInt("limit").optional ?? Doc.p("The maximum number of items to obtain")
-  val xAllItems = HeaderCodec.name[Boolean]("X-ALL-ITEMS").optional ??
-    Doc.p("Flag to indicate whether to return all items or just the new one")
+// Paso 2: Definir Endpoints
+val userId    = uuid("userId") ?? Doc.p("The unique identifier of a user")
+val itemId    = uuid("itemId") ?? Doc.p("The unique identifier of an item")
+val limit     = paramInt("limit").optional ?? Doc.p("The maximum number of items to obtain")
+val xAllItems = HeaderCodec.name[Boolean]("X-ALL-ITEMS").optional ??
+  Doc.p("Flag to indicate whether to return all items or just the new one")
 
-  val initializeCart =
-    Endpoint(Method.POST / "cart" / userId)
-      .out[Unit](Status.NoContent) ?? Doc.p("Initiliaze a user's cart")
+val initializeCart =
+  Endpoint(Method.POST / "cart" / userId)
+    .out[Unit](Status.NoContent) ?? Doc.p("Initiliaze a user's cart")
 
-  val addItem =
-    Endpoint(Method.POST / "cart" / userId / "item")
-      .header(xAllItems)
-      .in[Item](Doc.p("The item to be added"))
-      .out[Items](Doc.p("The operation result")) ?? Doc.p("Add an item to a user's cart")
+val addItem =
+  Endpoint(Method.POST / "cart" / userId / "item")
+    .header(xAllItems)
+    .in[Item](Doc.p("The item to be added"))
+    .out[Items](Doc.p("The operation result")) ?? Doc.p("Add an item to a user's cart")
 
-  val removeItem =
-    Endpoint(Method.DELETE / "cart" / userId / "item" / itemId)
-      .out[Items](Doc.p("The cart items after removal")) ?? Doc.p("Removes an item from a user's cart")
+val removeItem =
+  Endpoint(Method.DELETE / "cart" / userId / "item" / itemId)
+    .out[Items](Doc.p("The cart items after removal")) ?? Doc.p("Removes an item from a user's cart")
 
-  val updateItem =
-    Endpoint(Method.PUT / "cart" / userId / "item" / itemId)
-      .in[UpdateItemRequest](Doc.p("The request object"))
-      .out[Items](Doc.p("The cart items after updating")) ?? Doc.p("Updates an item")
+val updateItem =
+  Endpoint(Method.PUT / "cart" / userId / "item" / itemId)
+    .in[UpdateItemRequest](Doc.p("The request object"))
+    .out[Items](Doc.p("The cart items after updating")) ?? Doc.p("Updates an item")
 
-  val getCartContents =
-    Endpoint(Method.GET / "cart" / userId)
-      .query(limit)
-      .out[Items](Doc.p("The cart items")) ?? Doc.p("Gets the contents of a user's cart")
-}
+val getCartContents =
+  Endpoint(Method.GET / "cart" / userId)
+    .query(limit)
+    .out[Items](Doc.p("The cart items")) ?? Doc.p("Gets the contents of a user's cart")
 ```
 
 ---
@@ -1175,58 +1032,72 @@ transition: slide-left
 layout: default
 ---
 
-## Shopping Cart using **ZIO-HTTP Endpoints API**
+## Shopping Cart usando la **Endpoints API**
 
-```scala {1-2|4|5|7-13|15-25|27-33|35-41|43-49|51-58|60} {maxHeight:'400px'}
+```scala {1-2|4|5-11|5|13-23|25-31|33-39|41-47} {maxHeight:'400px'}
 import zio._
 import zio.http._
 
-// Step 3: Generate zio-http server
-object EndpointsServer extends ZIOAppDefault with Endpoints {
+// Paso 3: Definir handlers
+def handleInitializeCart(userId: UserId) =
+  ZIO.logSpan("initializeCart") {
+    for {
+      _ <- ZIO.logInfo("Initializing cart")
+      _ <- CartService.initialize(userId)
+    } yield ()
+  } @@ ZIOAspect.annotated("userId", userId.toString())
 
-  def handleInitializeCart(userId: UserId) =
-    ZIO.logSpan("initializeCart") {
-      for {
-        _ <- ZIO.logInfo("Initializing cart")
-        _ <- CartService.initialize(userId)
-      } yield ()
-    } @@ ZIOAspect.annotated("userId", userId.toString())
+def handleAddItem(userId: UserId, allItems: Option[Boolean], item: Item) =
+  ZIO.logSpan("addItem") {
+    for {
+      _      <- ZIO.logInfo("Adding item to cart")
+      items0 <- CartService.addItem(userId, item)
+      items   = allItems match {
+                  case Some(true) => items0
+                  case _          => Items.empty + item
+                }
+    } yield items
+  } @@ ZIOAspect.annotated("userId", userId.toString())
 
-  def handleAddItem(userId: UserId, allItems: Option[Boolean], item: Item) =
-    ZIO.logSpan("addItem") {
-      for {
-        _      <- ZIO.logInfo("Adding item to cart")
-        items0 <- CartService.addItem(userId, item)
-        items   = allItems match {
-                    case Some(true) => items0
-                    case _          => Items.empty + item
-                  }
-      } yield items
-    } @@ ZIOAspect.annotated("userId", userId.toString())
+def handleRemoveItem(userId: UserId, itemId: ItemId) =
+  ZIO.logSpan("removeItem") {
+    for {
+      _     <- ZIO.logInfo("Removing item from cart")
+      items <- CartService.removeItem(userId, itemId)
+    } yield items
+  } @@ ZIOAspect.annotated("userId" -> userId.toString(), "itemId" -> itemId.toString())
 
-  def handleRemoveItem(userId: UserId, itemId: ItemId) =
-    ZIO.logSpan("removeItem") {
-      for {
-        _     <- ZIO.logInfo("Removing item from cart")
-        items <- CartService.removeItem(userId, itemId)
-      } yield items
-    } @@ ZIOAspect.annotated("userId" -> userId.toString(), "itemId" -> itemId.toString())
+def handleUpdateItem(userId: UserId, itemId: ItemId, updateItemRequest: UpdateItemRequest) =
+  ZIO.logSpan("updateItem") {
+    for {
+      _     <- ZIO.logInfo("Updating item")
+      items <- CartService.updateItemQuantity(userId, itemId, updateItemRequest.quantity)
+    } yield items
+  } @@ ZIOAspect.annotated("userId" -> userId.toString(), "itemId" -> itemId.toString())
 
-  def handleUpdateItem(userId: UserId, itemId: ItemId, updateItemRequest: UpdateItemRequest) =
-    ZIO.logSpan("updateItem") {
-      for {
-        _     <- ZIO.logInfo("Updating item")
-        items <- CartService.updateItemQuantity(userId, itemId, updateItemRequest.quantity)
-      } yield items
-    } @@ ZIOAspect.annotated("userId" -> userId.toString(), "itemId" -> itemId.toString())
+def handleGetCartContents(userId: UserId, limit: Option[Int]) =
+  ZIO.logSpan("getCartContents") {
+    for {
+      _     <- ZIO.logInfo("Getting cart contents")
+      items <- CartService.getContents(userId)
+    } yield limit.fold(items)(items.take)
+  } @@ ZIOAspect.annotated("userId" -> userId.toString())
+```
 
-  def handleGetCartContents(userId: UserId, limit: Option[Int]) =
-    ZIO.logSpan("getCartContents") {
-      for {
-        _     <- ZIO.logInfo("Getting cart contents")
-        items <- CartService.getContents(userId)
-      } yield limit.fold(items)(items.take)
-    } @@ ZIOAspect.annotated("userId" -> userId.toString())
+---
+transition: slide-left
+layout: default
+---
+
+## Shopping Cart usando la **Endpoints API**
+
+```scala {1-2|4|5|8-15|10|17} {maxHeight:'400px'}
+import zio._
+import zio.http._
+
+// Paso 4: Ejecutar el servidor
+object EndpointsServer extends ZIOAppDefault {
+  ...
 
   val routes =
     Routes(
@@ -1243,11 +1114,18 @@ object EndpointsServer extends ZIOAppDefault with Endpoints {
 
 ---
 transition: slide-left
-layout: default
+layout: image-right
+image: /checklist.jpg
 ---
 
-<div class="flex w-full h-full justify-center items-center">
-  <div><img src="/bonusTime.jpeg" class="h-70 rounded-md"/></div>
+### Características de la **Endpoints API**
+
+<div class="flex h-4/5 w-full items-center gap-5">
+  <ul>
+    <li v-click>API es un mapeo <b>Endpoint -> Handler</b></li>
+    <li v-click>Es de <b>alto nivel</b></li>
+    <li v-click>Elimina tareas repetitivas de <b>codificación/decodificación</b></li>
+  </ul>
 </div>
 
 ---
@@ -1255,7 +1133,16 @@ transition: slide-left
 layout: default
 ---
 
-### Bonus: Shopping Cart Client using **ZIO-HTTP Endpoints API**
+<div class="flex w-full h-full justify-center items-center">
+  <div><img src="/hayMas.jpg" class="h-70 rounded-md"/></div>
+</div>
+
+---
+transition: slide-left
+layout: default
+---
+
+### Bonus: Cliente usando la **Endpoints API**
 
 ```scala {1-5|7|12|13-15|16-22|26-31} {maxHeight:'400px'}
 import zio._
@@ -1264,7 +1151,7 @@ import zio.http.endpoint.EndpointExecutor
 
 import java.util.UUID
 
-object EndpointsClient extends ZIOAppDefault with Endpoints {
+object EndpointsClient extends ZIOAppDefault {
 
   val clientExample: URIO[EndpointExecutor[Unit], Unit] =
     ZIO.scoped {
@@ -1297,19 +1184,21 @@ transition: slide-left
 layout: default
 ---
 
-## Bonus: Shopping Cart Docs using **ZIO-HTTP Endpoints API**
+## Bonus: Documentación usando la **Endpoints API**
 
+<div class="flex h-3/5 w-full items-center">
 ```scala {1-3|5|6|8} {maxHeight:'400px'}
 import zio._
 import zio.http.endpoint.openapi.OpenAPIGen
 import zio.json._
 
-object EndpointsDocs extends ZIOAppDefault with Endpoints {
+object EndpointsDocs extends ZIOAppDefault {
   val docs = OpenAPIGen.fromEndpoints(initializeCart, addItem, removeItem, updateItem, getCartContents)
 
   val run = Console.printLine(docs.toJson)
 }
 ```
+</div>
 
 ---
 transition: slide-left
