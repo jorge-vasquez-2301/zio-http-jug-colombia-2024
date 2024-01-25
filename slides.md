@@ -537,7 +537,7 @@ layout: default
 <div class="flex h-4/5 w-full items-center gap-5">
   <div>
     <ul>
-      <li v-click><b>Asíncronas y Concurrentes</b> -> Modelo basado en Fibras</li>
+      <li v-click><b>Asíncronas y Concurrentes</b> -> Modelo basado en Fibras/Virtual Threads (incluso sin Loom!)</li>
       <li v-click><b>Resilientes</b> -> Aprovechando todo el poder del sistema fuertemente tipado de Scala</li>
       <li v-click><b>Eficientes</b> -> Aplicaciones que nunca desperdician recursos</li>
       <li v-click><b>Fáciles de entender y de testear</b> -> Gracias a una composicionalidad superior</li>
@@ -664,7 +664,7 @@ image: /checklist.jpg
   <ul>
     <li v-click><b>ZIO HTTP</b> es una librería para construir aplicaciones HTTP</li>
     <li v-click>Basada en <b>ZIO</b> y <b>Netty</b></li>
-    <li v-click><b>Alto performance</b></li>
+    <li v-click><b>Alto performance: Usa árboles de prefijos para enrutamiento</b></li>
   </ul>
 </div>
 
@@ -987,7 +987,7 @@ transition: slide-left
 layout: default
 ---
 
-## Shopping Cart using **ZIO-HTTP Endpoints API**
+## Shopping Cart usando la **Endpoints API**
 
 ```scala {1-4|6|7|8|9|10-11|13-15|14|15|17-21|18|19|20|21|23-25|27-30|32-35|34} {maxHeight:'400px'}
 import zio.http._
@@ -1144,14 +1144,15 @@ layout: default
 
 ### Bonus: Cliente usando la **Endpoints API**
 
-```scala {1-5|7|12|13-15|16-22|26-31} {maxHeight:'400px'}
+```scala {1-5|7|13|14-16|17-23|27-32} {maxHeight:'400px'}
 import zio._
 import zio.http._
 import zio.http.endpoint.EndpointExecutor
 
 import java.util.UUID
 
-object EndpointsClient extends ZIOAppDefault {
+object ShoppingCartClient extends ZIOAppDefault {
+  ...
 
   val clientExample: URIO[EndpointExecutor[Unit], Unit] =
     ZIO.scoped {
@@ -1187,12 +1188,14 @@ layout: default
 ## Bonus: Documentación usando la **Endpoints API**
 
 <div class="flex h-3/5 w-full items-center">
-```scala {1-3|5|6|8} {maxHeight:'400px'}
+```scala {1-3|5|8|10} {maxHeight:'400px'}
 import zio._
 import zio.http.endpoint.openapi.OpenAPIGen
 import zio.json._
 
-object EndpointsDocs extends ZIOAppDefault {
+object ShoppingCartDocs extends ZIOAppDefault {
+  ...
+  
   val docs = OpenAPIGen.fromEndpoints(initializeCart, addItem, removeItem, updateItem, getCartContents)
 
   val run = Console.printLine(docs.toJson)
@@ -1202,17 +1205,96 @@ object EndpointsDocs extends ZIOAppDefault {
 
 ---
 transition: slide-left
+layout: default
+---
+
+## Bonus: CLI usando la **Endpoints API**
+
+<div class="flex h-4/5 w-full items-center">
+```scala {all} {maxHeight:'400px'}
+// build.sbt
+libraryDependencies ++= Seq(
+  "dev.zio" %% "zio-http-cli" % zioHttpVersion // 3.0.0-RC4
+)
+```
+</div>
+
+<style>
+  .slidev-code-wrapper {
+    @apply w-full
+  }
+</style>
+
+---
+transition: slide-left
+layout: default
+---
+
+## Bonus: CLI usando la **Endpoints API**
+
+<div class="flex h-3/5 w-full items-center">
+```scala {1-2|4|7-18} {maxHeight:'400px'}
+import zio.cli._
+import zio.http.endpoint.cli.HttpCliApp
+
+object ShoppingCartCli extends ZIOCliDefault {
+  ...
+
+  val cliApp =
+    HttpCliApp
+      .fromEndpoints(
+        name = "shopping-cart",
+        version = "0.0.1",
+        summary = HelpDoc.Span.text("Shopping Cart Command Line Interface"),
+        footer = HelpDoc.p("Copyright 2024"),
+        host = "localhost",
+        port = 8080,
+        endpoints = Chunk(initializeCart, addItem, removeItem, updateItem, getCartContents)
+      )
+      .cliApp
+}
+```
+</div>
+
+---
+transition: slide-left
+layout: default
+---
+
+## Bonus: CLI usando la **Endpoints API**
+
+<div class="mt-4 flex w-full h-full justify-center">
+  <div><img src="/demo.gif" class="h-100 rounded-md"/></div>
+</div>
+
+---
+transition: slide-left
 layout: image-right
 image: /summary.jpg
 ---
 
-## **Summary**
+## **En resumen**
+
+<div class="mt-4 flex h-3/5 w-full items-center">
+  <ul>
+    <li v-click>La <b>Programación Funcional</b> no es un tema sólo para entornos académicos</li>
+    <li v-click>La <b>Programación Funcional</b> permite construir aplicaciones completas en el mundo real</li>
+  </ul>
+</div>
+
+---
+transition: slide-left
+layout: image-right
+image: /summary.jpg
+---
+
+## **En resumen**
 
 <div class="mt-4 flex h-4/5 w-full items-center">
   <ul>
-    <li v-click><b>Classic approach</b> to building APIs is <b>low-level</b></li>
-    <li v-click><b>Endpoints</b> offer a <b>higher-level</b> solution</li>
-    <li v-click>Each <b>endpoint library</b> has slightly different features and excels at slightly different use cases</li>
+    <li v-click><b>ZIO</b> es una librería para Scala que permite construir aplicaciones asíncronas, concurrentes, resilientes, eficientes, fáciles de entender y testear</li>
+    <li v-click>Existe todo un <b>ecosistema de librerías</b> alrededor de ZIO para diversas situaciones</li>
+    <li v-click><b>ZIO HTTP</b> permite implementar servidores REST, autogenerar clientes, documentación y CLIs</li>
   </ul>
 </div>
 
@@ -1222,29 +1304,13 @@ layout: image-right
 image: /learn.jpg
 ---
 
-## **To learn more...**
+### ¿Dónde **aprender** más?
 
 <div class="flex h-3/5 w-full items-center">
   <ul>
-    <li>Visit the <strong>Tapir</strong> <a href="https://github.com/softwaremill/tapir" target="_blank">GitHub repo</a></li>
-    <li>Visit the <strong>Endpoints4s</strong> <a href="https://github.com/endpoints4s/endpoints4s" target="_blank">GitHub repo</a></li>
-    <li>Visit the <strong>ZIO HTTP</strong> <a href="https://github.com/zio/zio-http" target="_blank">GitHub repo</a></li>
-    <li>Watch my talk about <strong>ZIO HTTP CLI:</strong><br/> <a href="https://youtu.be/BEwxsPUQ9SY?si=C4JKp569-Hr8Wz4K" target="_blank">Teach your Web API to Speak Loud and Clear CLI!</a></li>
-  </ul>
-</div>
-
----
-transition: slide-left
-layout: image-right
-image: /thanks.jpg
----
-
-## **Special Thanks**
-
-<div class="flex h-3/5 w-full items-center">
-  <ul>
-    <li><strong>Ziverge</strong> for organizing this conference</li>
-    <li><strong>John De Goes</strong> for guidance and support</li>
+    <li v-click><a href="https://zio.dev/" target="_blank">Sitio oficial de ZIO</a></li>
+    <li v-click><a href="https://www.zionomicon.com/" target="_blank">Zionomicon</a></li>
+    <li v-click><a href="https://jorgevasquez.blog/" target="_blank">Mi nuevo blog personal (jorgevasquez.blog)</a></li>
   </ul>
 </div>
 
@@ -1254,11 +1320,10 @@ layout: image-right
 image: /computer.png
 ---
 
-## **Contact me**
+## **¡Gracias!**
 
 <div class="grid grid-cols-8 gap-4 items-center h-4/5 content-center text-2xl">
   <div class="col-span-1" v-click><img src="/x.png" class="w-8" /></div> <div class="col-span-7" v-after>@jorvasquez2301</div>
   <div class="col-span-1" v-click><img src="/linkedin.png" class="w-8" /></div> <div class="col-span-7" v-after>jorge-vasquez-2301</div>
   <div class="col-span-1" v-click><img src="/email.png" class="w-8" /></div> <div class="col-span-7" v-after>jorge.vasquez@ziverge.com</div>
-  <div class="col-span-1" v-click><img src="/blog.png" class="w-8" /></div> <div class="col-span-7" v-after><b>jorgevasquez.blog</b></div>
 </div>
