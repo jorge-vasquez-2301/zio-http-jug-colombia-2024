@@ -55,13 +55,12 @@ image: ./agenda.jpg
 
 ## **Agenda**
 
-<div class="mt-4 flex h-4/5 w-full items-center gap-5 text-justify">
+<div class="mt-4 flex h-3/5 w-full items-center gap-5 text-justify">
   <ul>
     <li v-click>Conceptos básicos de <b>Programación Funcional (PF)</b></li>
     <li v-click>Conceptos básicos de <b>ZIO</b></li>
     <li v-click>Conceptos básicos de <b>ZIO HTTP</b></li>
-    <li v-click>Ejemplo práctico: Shopping Cart usando la <b>API de Routes</b></li>
-    <li v-click>Ejemplo práctico: Shopping Cart usando la <b>API de Endpoints</b></li>    
+    <li v-click>Ejemplo práctico: <b>Shopping Cart</b></li> 
   </ul>
 </div>
 
@@ -664,7 +663,7 @@ image: /checklist.jpg
   <ul>
     <li v-click><b>ZIO HTTP</b> es una librería para construir aplicaciones HTTP</li>
     <li v-click>Basada en <b>ZIO</b> y <b>Netty</b></li>
-    <li v-click><b>Alto performance: Usa árboles de prefijos para enrutamiento</b></li>
+    <li v-click><b>Alto performance:</b> Usa árboles de prefijos para enrutamiento</li>
   </ul>
 </div>
 
@@ -1039,7 +1038,7 @@ import zio._
 import zio.http._
 
 // Paso 3: Definir handlers
-def handleInitializeCart(userId: UserId) =
+def handleInitializeCart(userId: UserId): ZIO[CartService, Nothing, Unit] =
   ZIO.logSpan("initializeCart") {
     for {
       _ <- ZIO.logInfo("Initializing cart")
@@ -1047,7 +1046,7 @@ def handleInitializeCart(userId: UserId) =
     } yield ()
   } @@ ZIOAspect.annotated("userId", userId.toString())
 
-def handleAddItem(userId: UserId, allItems: Option[Boolean], item: Item) =
+def handleAddItem(userId: UserId, allItems: Option[Boolean], item: Item): ZIO[CartService, Nothing, Items] =
   ZIO.logSpan("addItem") {
     for {
       _      <- ZIO.logInfo("Adding item to cart")
@@ -1059,7 +1058,7 @@ def handleAddItem(userId: UserId, allItems: Option[Boolean], item: Item) =
     } yield items
   } @@ ZIOAspect.annotated("userId", userId.toString())
 
-def handleRemoveItem(userId: UserId, itemId: ItemId) =
+def handleRemoveItem(userId: UserId, itemId: ItemId): ZIO[CartService, Nothing, Items] =
   ZIO.logSpan("removeItem") {
     for {
       _     <- ZIO.logInfo("Removing item from cart")
@@ -1075,7 +1074,7 @@ def handleUpdateItem(userId: UserId, itemId: ItemId, updateItemRequest: UpdateIt
     } yield items
   } @@ ZIOAspect.annotated("userId" -> userId.toString(), "itemId" -> itemId.toString())
 
-def handleGetCartContents(userId: UserId, limit: Option[Int]) =
+def handleGetCartContents(userId: UserId, limit: Option[Int]): ZIO[CartService, Nothing, Items] =
   ZIO.logSpan("getCartContents") {
     for {
       _     <- ZIO.logInfo("Getting cart contents")
@@ -1323,7 +1322,7 @@ image: /computer.png
 ## **¡Gracias!**
 
 <div class="grid grid-cols-8 gap-4 items-center h-4/5 content-center text-2xl">
-  <div class="col-span-1" v-click><img src="/x.png" class="w-8" /></div> <div class="col-span-7" v-after>@jorvasquez2301</div>
-  <div class="col-span-1" v-click><img src="/linkedin.png" class="w-8" /></div> <div class="col-span-7" v-after>jorge-vasquez-2301</div>
-  <div class="col-span-1" v-click><img src="/email.png" class="w-8" /></div> <div class="col-span-7" v-after>jorge.vasquez@ziverge.com</div>
+  <div class="col-span-1"><img src="/x.png" class="w-8" /></div> <div class="col-span-7">@jorvasquez2301</div>
+  <div class="col-span-1"><img src="/linkedin.png" class="w-8" /></div> <div class="col-span-7">jorge-vasquez-2301</div>
+  <div class="col-span-1"><img src="/email.png" class="w-8" /></div> <div class="col-span-7">jorge.vasquez@ziverge.com</div>
 </div>
