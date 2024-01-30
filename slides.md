@@ -1307,6 +1307,7 @@ image: /learn.jpg
 
 <div class="flex h-3/5 w-full items-center">
   <ul>
+    <li v-click><a href="https://github.com/zio" target="_blank">ZIO en GitHub</a></li>
     <li v-click><a href="https://zio.dev/" target="_blank">Sitio oficial de ZIO</a></li>
     <li v-click><a href="https://www.zionomicon.com/" target="_blank">Zionomicon</a></li>
     <li v-click><a href="https://jorgevasquez.blog/" target="_blank">Mi nuevo blog personal (jorgevasquez.blog)</a></li>
